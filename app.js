@@ -1,111 +1,88 @@
 let allScenarios = null;
 let currentScenarioId = null;
-let currentStepIdx = 0;
+let currentStepIdx = 0;   // L'index de la ligne dans le JSON (S1, S2, S3)
+let currentViewIdx = 0;   // L'index de la "tranche" dans la phase actuelle (0 ou 1)
 let isIAMode = false;
-let autoTimer = null;
 
-// --- 1. BOUTON IA ---
-function setupIAButton() {
-    const btnIA = document.getElementById('toggleIA');
-    if (!btnIA) return;
-
-    btnIA.onclick = () => {
-        isIAMode = !isIAMode;
-        btnIA.innerText = isIAMode ? "IA ON" : "IA OFF";
-        // Utilise la classe CSS pour le passage au rouge
-        btnIA.classList.toggle('ia-on', isIAMode);
-        populateSelect();
-    };
-}
-
-// --- 2. LOGIQUE DE MAPPING DYNAMIQUE ---
-function getActiveZones(step, phaseName, config) {
-    const allZoneKeys = Object.keys(step).filter(k => k.startsWith('Zone_')).sort();
-    if (!config) return allZoneKeys.slice(0, 2);
-
-    const phases = config.split(';').map(p => {
-        const parts = p.replace('<', '').replace('>', '').split(':');
-        return { name: parts[0].trim(), count: parseInt(parts[1]) };
-    });
-
-    let offset = 0;
-    for (let p of phases) {
-        if (p.name === phaseName) break;
-        offset += (p.count - 1);
+// --- LE MOTEUR DE DÉTECTION DES VUES ---
+function getViewConfig(phase, viewIdx) {
+    // Phase 1 : MONO CULTURE
+    if (phase === "MONO CULTURE") {
+        return viewIdx === 0
+            ? { panels: ['Zone_Tchate_A'], suffix: '_A' } // Tranche 1
+            : { panels: ['Zone_Tchate_A', 'Zone_Commentaire_A'], suffix: '_A' }; // Tranche 2
     }
-    const currentPhase = phases.find(p => p.name === phaseName);
-    const count = currentPhase ? currentPhase.count : 2;
-    return allZoneKeys.slice(offset, offset + count);
+    // Phase 2 : TOUT-MONDE (Le Pivot)
+    if (phase === "TOUT-MONDE") {
+        return viewIdx === 0
+            ? { panels: ['Zone_Commentaire_A', 'Zone_Commentaire_B'], suffix: '_B' } // Tranche 1
+            : { panels: ['Zone_Commentaire_B', 'Zone_Tchate_B'], suffix: '_B' };    // Tranche 2
+    }
+    // Phase 3 : NOU PE PALE (L'aboutissement)
+    if (phase === "NOU PE PALE") {
+        return viewIdx === 0
+            ? { panels: ['Zone_Tchate_B'], suffix: '_B' } // Tranche 1 (Intel/KPI/Log B)
+            : { panels: ['Zone_Tchate_A', 'Zone_Tchate_B'], suffix: '_B' }; // FINAL (Synchro)
+    }
+    return { panels: [], suffix: '_A' };
 }
 
-// --- 3. CHARGEMENT & FILTRAGE ---
-function populateSelect() {
-    const select = document.getElementById('scenario-select');
-    if (!select) return;
-    select.innerHTML = '<option value="">-- Choisir un Scénario --</option>';
-
-    if (!allScenarios) return;
-
-    Object.keys(allScenarios).forEach(id => {
-        const scn = allScenarios[id];
-        if (scn.Scen_IA === isIAMode) {
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.innerText = `${scn.Scen_ID || id} - ${scn.Scen_Titre || "Sans Titre"}`;
-            select.appendChild(opt);
-        }
-    });
-}
-
-// --- 4. LE RENDU ---
 function renderStep() {
     const scn = allScenarios[currentScenarioId];
     const step = scn.steps[currentStepIdx];
+    const phase = step.Step_Phase;
 
-    document.getElementById('scenario-name').innerText = `${step.Step_Phase} (${currentStepIdx + 1}/${scn.steps.length})`;
+    // Récupération de la configuration visuelle via le programme
+    const config = getViewConfig(phase, currentViewIdx);
 
+    // Mise à jour du titre
+    document.getElementById('scenario-name').innerText = `${phase} - Tranche ${currentViewIdx + 1}`;
+
+    // 1. Impression des Panneaux (Tranches)
     const actionBox = document.getElementById('box-action');
     actionBox.innerHTML = "";
-
-    const keys = getActiveZones(step, step.Step_Phase, scn.Scen_Visualisation);
-    keys.forEach(key => {
+    config.panels.forEach(key => {
         const pane = document.createElement('div');
-        pane.className = "panneau-tranche";
-        pane.innerHTML = `<div class="pane-label">${key.replace('Zone_', '')}</div>${step[key] || ""}`;
+        const sideClass = key.endsWith('_A') ? 'pane-a' : 'pane-b';
+        pane.className = `panneau-tranche ${sideClass}`;
+
+        // RÈGLE : On imprime ce qu'il y a, même si c'est "(vide)"
+        const content = step[key] || "";
+        pane.innerHTML = `<div class="pane-label">${key.replace('Zone_', '').replace('_', ' ')}</div>${content}`;
         actionBox.appendChild(pane);
     });
 
-    const suffix = isIAMode ? '_B' : '_A';
-    document.getElementById('smart-content').innerHTML = step['Zone_Intel' + suffix] || step['Explication_SMART'] || "Analyse...";
-    document.getElementById('matrix-logs').innerHTML = `<div class="log-entry">${step['Zone_Log' + suffix] || "Système OK"}</div>`;
+    // 2. Impression Intelligence, Log et KPI (Suivent le suffixe de la config)
+    const sfx = config.suffix;
+    document.getElementById('smart-content').innerHTML = step['Zone_Intel' + sfx] || "";
 
-    if (step.Step_Pause > 0) {
-        clearTimeout(autoTimer);
-        autoTimer = setTimeout(() => {
-            if (currentStepIdx < scn.steps.length - 1) {
-                currentStepIdx++;
-                renderStep();
-            }
-        }, step.Step_Pause * 1000);
-    }
+    const logContent = step['Zone_Log' + sfx] || "";
+    const kpiContent = step['Zone_KPI' + sfx] ? `<div class="kpi-badge">KPI: ${step['Zone_KPI' + sfx]}</div>` : "";
+
+    document.getElementById('matrix-logs').innerHTML = `
+        <div class="log-entry">${logContent}</div>
+        ${kpiContent}
+    `;
 }
 
-// Initialisation
-fetch('scenarios.json').then(r => r.json()).then(data => {
-    allScenarios = data;
-    setupIAButton();
-    populateSelect();
-});
-
-document.getElementById('scenario-select').onchange = (e) => {
-    currentScenarioId = e.target.value;
-    currentStepIdx = 0;
-    if (currentScenarioId) renderStep();
+// --- NAVIGATION LOGIQUE ---
+document.getElementById('nextBtn').onclick = () => {
+    const scn = allScenarios[currentScenarioId];
+    // On avance dans les tranches (0 -> 1) avant de changer de ligne JSON
+    if (currentViewIdx < 1) {
+        currentViewIdx++;
+    } else {
+        if (currentStepIdx < scn.steps.length - 1) {
+            currentStepIdx++;
+            currentViewIdx = 0;
+        }
+    }
+    renderStep();
 };
 
-document.getElementById('nextBtn').onclick = () => {
-    if (currentScenarioId && currentStepIdx < allScenarios[currentScenarioId].steps.length - 1) {
-        currentStepIdx++;
-        renderStep();
-    }
+// Fonction REPRISE (Remise à zéro totale)
+document.getElementById('stopBtn').onclick = () => {
+    currentStepIdx = 0;
+    currentViewIdx = 0;
+    renderStep();
 };
