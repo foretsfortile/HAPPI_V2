@@ -95,4 +95,66 @@ function renderStep() {
     // 1. Zone Action (Injection des tranches A et B)
     const actionBox = document.getElementById('box-action');
     actionBox.innerHTML = "";
-    config.panels.forEach(
+    config.panels.forEach(key => {
+        const pane = document.createElement('div');
+        const sideClass = key.endsWith('_A') ? 'pane-a' : 'pane-b';
+        pane.className = `panneau-tranche ${sideClass}`;
+        pane.innerHTML = `<div class="pane-label">${key.replace('Zone_', '').replace('_', ' ')}</div>${step[key] || ""}`;
+        actionBox.appendChild(pane);
+    });
+
+    // 2. Zone Intelligence (Suit le suffixe de la vue active)
+    const suffix = config.suffix;
+    document.getElementById('smart-content').innerHTML = step['Zone_Intel' + suffix] || step['Explication_SMART'] || "Analyse en cours...";
+
+    // 3. Zone Machinerie (Logs et KPI)
+    const logContent = step['Zone_Log' + suffix] || "Système opérationnel";
+    const kpiContent = step['Zone_KPI' + suffix] ? `<div style="color:#10b981; margin-top:10px; font-weight:bold;">KPI: ${step['Zone_KPI' + suffix]}</div>` : "";
+    document.getElementById('matrix-logs').innerHTML = `<div class="log-entry">${logContent}</div>${kpiContent}`;
+}
+
+// ==========================================================
+// 4. NAVIGATION ET ÉVÉNEMENTS
+// ==========================================================
+function setupNavigation() {
+    const select = document.getElementById('scenario-select');
+    const btnNext = document.getElementById('nextBtn');
+    const btnStop = document.getElementById('stopBtn');
+
+    select.onchange = (e) => {
+        currentScenarioId = e.target.value;
+        currentStepIdx = 0;
+        currentViewIdx = 0;
+        if (currentScenarioId) renderStep();
+    };
+
+    btnNext.onclick = () => {
+        if (!currentScenarioId) return;
+        const scenario = allScenarios[currentScenarioId];
+
+        // Logique pour passer d'une vue à l'autre, puis d'une étape à l'autre
+        if (currentViewIdx < 1) {
+            currentViewIdx++;
+        } else if (currentStepIdx < scenario.steps.length - 1) {
+            currentStepIdx++;
+            currentViewIdx = 0;
+        }
+        renderStep();
+    };
+
+    btnStop.onclick = () => {
+        currentStepIdx = 0;
+        currentViewIdx = 0;
+        if (currentScenarioId) renderStep();
+    };
+}
+
+function resetDisplay() {
+    currentScenarioId = null;
+    currentStepIdx = 0;
+    currentViewIdx = 0;
+    document.getElementById('scenario-name').innerText = "SÉLECTIONNEZ UN SCÉNARIO";
+    document.getElementById('box-action').innerHTML = "";
+    document.getElementById('smart-content').innerHTML = "En attente...";
+    document.getElementById('matrix-logs').innerHTML = "Système prêt.";
+}
