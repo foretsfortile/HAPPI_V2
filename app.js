@@ -1,70 +1,22 @@
-// ==========================================================
-// CONFIGURATION ET ÉTAT DE L'APPLICATION
-// ==========================================================
+// --- ÉTAT GLOBAL ---
 let allScenarios = null;
 let currentScenarioId = null;
-let currentStepIdx = 0;   // Index de la ligne (S1, S2, S3)
-let currentViewIdx = 0;   // Index de la vue dans la phase (0 ou 1)
-let isIAMode = false;     // Initialisé à FALSE pour voir vos scénarios par défaut
+let currentStepIdx = 0;
+let currentViewIdx = 0;
+let isIAMode = false;
 
-// ==========================================================
-// 1. CHARGEMENT DES DONNÉES (FETCH)
-// ==========================================================
-// On ajoute le timestamp pour éviter les problèmes de cache GitHub
+// --- 1. CHARGEMENT ---
 fetch('scenarios.json?v=' + Date.now())
-    .then(response => response.json())
+    .then(r => r.json())
     .then(data => {
         allScenarios = data;
-        console.log("Données chargées :", allScenarios);
-        populateSelect(); // Appel crucial après réception des données
-        setupIAButton();
-        setupNavigation();
-    })
-    .catch(err => {
-        console.error("Erreur lors du chargement du JSON :", err);
-        document.getElementById('matrix-logs').innerHTML = "ERREUR CHARGEMENT JSON";
-    });
-
-// ==========================================================
-// 2. GESTION DU MENU DÉROULANT ET DU BOUTON IA
-// ==========================================================
-function populateSelect() {
-    const select = document.getElementById('scenario-select');
-    if (!select || !allScenarios) return;
-
-    select.innerHTML = '<option value="">-- Choisir un Scénario --</option>';
-
-    Object.keys(allScenarios).forEach(id => {
-        const scenario = allScenarios[id];
-        // On compare Scen_IA (du JSON) avec isIAMode (du JS)
-        if (scenario.Scen_IA === isIAMode) {
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.innerText = `${id} - ${scenario.Scen_Titre}`;
-            select.appendChild(opt);
-        }
-    });
-}
-
-function setupIAButton() {
-    const btnIA = document.getElementById('toggleIA');
-    if (!btnIA) return;
-
-    btnIA.onclick = () => {
-        isIAMode = !isIAMode;
-        btnIA.innerText = isIAMode ? "IA ON" : "IA OFF";
-        // On rafraîchit la liste des scénarios disponibles
         populateSelect();
-        // Reset de la vue si on change de mode
-        resetDisplay();
-    };
-}
+        setupEvents();
+    })
+    .catch(err => console.error("Erreur JSON:", err));
 
-// ==========================================================
-// 3. MOTEUR DE RENDU DES TRANCHES (LOGIQUE MIROIR)
-// ==========================================================
+// --- 2. LOGIQUE DE STORYBOARD ---
 function getViewConfig(phase, viewIdx) {
-    // Cette logique assure que les bons panneaux s'affichent selon la phase
     const configs = {
         "MONO CULTURE": [
             { panels: ['Zone_Tchate_A'], suffix: '_A' },
@@ -82,6 +34,7 @@ function getViewConfig(phase, viewIdx) {
     return configs[phase] ? configs[phase][viewIdx] : { panels: [], suffix: '_A' };
 }
 
+// --- 3. RENDU (CORRECTION TITRES & UNDEFINED) ---
 function renderStep() {
     if (!currentScenarioId || !allScenarios[currentScenarioId]) return;
 
@@ -89,72 +42,95 @@ function renderStep() {
     const step = scenario.steps[currentStepIdx];
     const config = getViewConfig(step.Step_Phase, currentViewIdx);
 
-    // Mise à jour du titre
+    // FIX : On affiche la Phase + Vue, pas le contenu du message dans le titre
     document.getElementById('scenario-name').innerText = `${step.Step_Phase} - Vue ${currentViewIdx + 1}/2`;
 
-    // 1. Zone Action (Injection des tranches A et B)
-    const actionBox = document.getElementById('box-action');
-    actionBox.innerHTML = "";
+    // Rendu des panneaux (Miroir)
+    const box = document.getElementById('box-action');
+    box.innerHTML = "";
     config.panels.forEach(key => {
         const pane = document.createElement('div');
         const sideClass = key.endsWith('_A') ? 'pane-a' : 'pane-b';
         pane.className = `panneau-tranche ${sideClass}`;
-        pane.innerHTML = `<div class="pane-label">${key.replace('Zone_', '').replace('_', ' ')}</div>${step[key] || ""}`;
-        actionBox.appendChild(pane);
+
+        // On affiche proprement le contenu du JSON
+        const content = step[key] || "";
+        const label = key.replace('Zone_', '').replace('_', ' ');
+        pane.innerHTML = `<div class="pane-label">${label}</div>${content}`;
+        box.appendChild(pane);
     });
 
-    // 2. Zone Intelligence (Suit le suffixe de la vue active)
-    const suffix = config.suffix;
-    document.getElementById('smart-content').innerHTML = step['Zone_Intel' + suffix] || step['Explication_SMART'] || "Analyse en cours...";
+    // Intelligence & Machinerie
+    const sfx = config.suffix;
+    document.getElementById('smart-content').innerHTML = step['Zone_Intel' + sfx] || "Analyse en cours...";
 
-    // 3. Zone Machinerie (Logs et KPI)
-    const logContent = step['Zone_Log' + suffix] || "Système opérationnel";
-    const kpiContent = step['Zone_KPI' + suffix] ? `<div style="color:#10b981; margin-top:10px; font-weight:bold;">KPI: ${step['Zone_KPI' + suffix]}</div>` : "";
-    document.getElementById('matrix-logs').innerHTML = `<div class="log-entry">${logContent}</div>${kpiContent}`;
+    const logVal = step['Zone_Log' + sfx] || "Système opérationnel";
+    const kpiVal = step['Zone_KPI' + sfx] ? `<div style="color:#10b981;margin-top:10px;">KPI: ${step['Zone_KPI' + sfx]}</div>` : "";
+    document.getElementById('matrix-logs').innerHTML = `<div class="log-entry">${logVal}</div>${kpiVal}`;
 }
 
-// ==========================================================
-// 4. NAVIGATION ET ÉVÉNEMENTS
-// ==========================================================
-function setupNavigation() {
+// --- 4. NAVIGATION & ÉVÉNEMENTS ---
+function populateSelect() {
     const select = document.getElementById('scenario-select');
-    const btnNext = document.getElementById('nextBtn');
-    const btnStop = document.getElementById('stopBtn');
+    if (!select) return;
 
-    select.onchange = (e) => {
+    select.innerHTML = '<option value="">-- Choisir un Scénario --</option>';
+    Object.keys(allScenarios).forEach(id => {
+        const scn = allScenarios[id];
+        // FIX : Comparaison stricte avec Scen_IA du JSON
+        if (scn.Scen_IA === isIAMode) {
+            const opt = document.createElement('option');
+            opt.value = id;
+            // FIX : On n'affiche que le titre, pas l'ID technique
+            opt.innerText = scn.Scen_Titre || id;
+            select.appendChild(opt);
+        }
+    });
+}
+
+function setupEvents() {
+    // Bouton IA
+    const btnIA = document.getElementById('toggleIA');
+    btnIA.onclick = () => {
+        isIAMode = !isIAMode;
+        btnIA.innerText = isIAMode ? "IA ON" : "IA OFF";
+        populateSelect();
+        resetView();
+    };
+
+    // Changement de scénario
+    document.getElementById('scenario-select').onchange = (e) => {
         currentScenarioId = e.target.value;
         currentStepIdx = 0;
         currentViewIdx = 0;
         if (currentScenarioId) renderStep();
     };
 
-    btnNext.onclick = () => {
+    // Bouton Suivant
+    document.getElementById('nextBtn').onclick = () => {
         if (!currentScenarioId) return;
-        const scenario = allScenarios[currentScenarioId];
-
-        // Logique pour passer d'une vue à l'autre, puis d'une étape à l'autre
+        const scn = allScenarios[currentScenarioId];
         if (currentViewIdx < 1) {
             currentViewIdx++;
-        } else if (currentStepIdx < scenario.steps.length - 1) {
+        } else if (currentStepIdx < scn.steps.length - 1) {
             currentStepIdx++;
             currentViewIdx = 0;
         }
         renderStep();
     };
 
-    btnStop.onclick = () => {
+    // Bouton Reprise
+    document.getElementById('stopBtn').onclick = () => {
         currentStepIdx = 0;
         currentViewIdx = 0;
         if (currentScenarioId) renderStep();
     };
 }
 
-function resetDisplay() {
+function resetView() {
     currentScenarioId = null;
-    currentStepIdx = 0;
-    currentViewIdx = 0;
     document.getElementById('scenario-name').innerText = "SÉLECTIONNEZ UN SCÉNARIO";
     document.getElementById('box-action').innerHTML = "";
     document.getElementById('smart-content').innerHTML = "En attente...";
-    document.getElementById('matrix-logs').innerHTML = "Système prêt.";
+    document.getElementById('matrix-logs').innerHTML = "Initialisation système...";
 }
