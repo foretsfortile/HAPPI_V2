@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>HAPPI V2 - Mirror System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header id="main-header">
+        <div class="brand">
+            <div class="logo">HAPPI <span class="acronym">V2 - Mirror</span></div>
+        </div>
+        <div class="nav-controls">
+            <select id="scenario-select">
+                <option value="">-- Choisir un Scénario --</option>
+            </select>
+            <button id="stopBtn" style="background:#450a0a; color:white;">STOP / ANALYSE</button>
+        </div>
+    </header>
+
+    <main id="command-center">
+        <section class="col action-col">
+            <h2 class="col-title" id="scenario-name">SÉLECTIONNEZ UN SCÉNARIO</h2>
+            <div id="box-action" class="view-box"></div>
+        </section>
+
+        <section class="col brain-col">
+            <h2 class="col-title">Intelligence</h2>
+            <div id="smart-content" class="scroll-area"></div>
+        </section>
+
+        <section class="col system-col">
+            <h2 class="col-title">Machinerie</h2>
+            <div id="matrix-logs" class="matrix-area"></div>
+        </section>
+    </main>
+
+    <footer id="global-controls">
+        <button id="prevBtn" class="focus-btn">PRÉCÉDENT</button>
+        <button id="nextBtn" class="main-action">SUIVANT</button>
+    </footer>
+</body>
+
+</html>
