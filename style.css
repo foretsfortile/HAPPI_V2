@@ -462,4 +462,121 @@ body {
     text-transform: uppercase;
 }
 
-/* Le reste de votre style.css d'origine peut rester tel quel */
+:root {
+    --bg-dark: #0f172a;
+    --panel-bg: #1e293b;
+    --border-color: #334155;
+    --text-main: #f8fafc;
+    --color-a: #3b82f6;
+    --color-b: #10b981;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-header {
+    background: var(--panel-bg);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.mirror-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    padding: 1.5rem;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.col-viewport {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+}
+
+.col-header {
+    background: var(--border-color);
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #94a3b8;
+}
+
+.col-body {
+    padding: 1.2rem;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+/* Styles des tranches (Panneaux d'action) */
+.panneau-tranche {
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    position: relative;
+    border-left: 4px solid transparent;
+}
+
+.pane-a {
+    background: rgba(59, 130, 246, 0.1);
+    border-left-color: var(--color-a);
+}
+
+.pane-b {
+    background: rgba(16, 185, 129, 0.1);
+    border-left-color: var(--color-b);
+}
+
+.pane-label {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    opacity: 0.4;
+}
+
+.machine-theme {
+    background: #000;
+    color: var(--color-b);
+    font-family: 'Courier New', monospace;
+}
+
+.main-footer {
+    padding: 1rem 2rem;
+    background: var(--panel-bg);
+    display: flex;
+    justify-content: flex-end;
+}
+
+button {
+    padding: 0.6rem 1.5rem;
+    border-radius: 4px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-next {
+    background: var(--color-b);
+    color: white;
+}
+
+.btn-reset {
+    background: #f43f5e;
+    color: white;
+    margin-left: 10px;
+}

@@ -4,51 +4,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HAPPI V2 - Mirror System</title>
+    <title>HAPPI V2 - Mirror Analysis</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <header id="main-header">
-        <div class="brand">
-            <div class="logo">HAPPI <span class="acronym">V2 - Mirror</span></div>
-        </div>
-        <div class="nav-controls">
-            <button id="toggleIA" class="ia-toggle-btn">IA OFF</button>
+
+    <header class="main-header">
+        <div class="logo">HAPPI V2 <span class="sub-logo">- Mirror</span></div>
+        <div class="controls-top">
+            <button id="toggleIA" class="btn-ia">IA OFF</button>
             <select id="scenario-select">
-                <option value="">-- Choisir un Scénario --</option>
+                <option value="">-- Chargement en cours --</option>
             </select>
-            <button id="stopBtn" class="stop-btn">STOP / ANALYSE</button>
+            <button id="stopBtn" class="btn-reset">REPRISE</button>
         </div>
     </header>
 
-    <main id="command-center">
-        <section class="col action-col">
-            <h2 class="col-title" id="scenario-name">SÉLECTIONNEZ UN SCÉNARIO</h2>
-            <div id="box-action" class="view-box"></div>
-        </section>
-        <section class="col brain-col">
-            <h2 class="col-title">Intelligence</h2>
-            <div id="smart-content" class="scroll-area">
-                <div class="placeholder-text">En attente de données...</div>
+    <main class="mirror-grid">
+        <section class="col-viewport">
+            <header class="col-header" id="scenario-name">SÉLECTIONNEZ UN SCÉNARIO</header>
+            <div class="col-body" id="box-action">
             </div>
         </section>
-        <section class="col system-col">
-            <h2 class="col-title">Machinerie</h2>
-            <div id="matrix-logs" class="matrix-area">
-                <div class="log-entry">Système prêt.</div>
+
+        <section class="col-viewport">
+            <header class="col-header">INTELLIGENCE CONTEXTUELLE</header>
+            <div class="col-body" id="smart-content">
+                <p class="placeholder">En attente de données...</p>
+            </div>
+        </section>
+
+        <section class="col-viewport">
+            <header class="col-header">MACHINERIE SYSTÈME</header>
+            <div class="col-body machine-theme" id="matrix-logs">
+                <p class="log-entry">Initialisation système...</p>
             </div>
         </section>
     </main>
 
-    <footer id="global-controls">
-        <div class="nav-buttons">
-            <button id="prevBtn" class="focus-btn">PRÉCÉDENT</button>
-            <button id="nextBtn" class="main-action">SUIVANT</button>
-        </div>
+    <footer class="main-footer">
+        <button id="nextBtn" class="btn-next">SUIVANT / ANALYSE</button>
     </footer>
-    <script src="app.js?v=1.1"></script>
-</body>
 
-
-</html>
+    <script src="app.js?v=2.1"></script>
