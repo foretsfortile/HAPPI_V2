@@ -1,26 +1,19 @@
-// --- VARIABLES D'ÉTAT ---
 let allScenarios = null;
 let currentScenarioId = null;
-let currentStepIdx = 0;   // Index de la ligne dans le JSON (S1, S2, S3)
-let currentViewIdx = 0;   // Index de la "tranche" dans la phase (0 ou 1)
+let currentStepIdx = 0;   // Index de la ligne (S1, S2, S3)
+let currentViewIdx = 0;   // Index de la tranche (0 ou 1)
 let isIAMode = false;
 
-// --- 1. CHARGEMENT INITIAL (FETCH) ---
-// Utilisation de Date.now() pour forcer GitHub à ignorer le cache
+// 1. CHARGEMENT INITIAL AVEC FORCE RELOAD
 fetch('scenarios.json?v=' + Date.now())
-    .then(response => {
-        if (!response.ok) throw new Error("Fichier JSON introuvable");
-        return response.json();
-    })
+    .then(r => r.json())
     .then(data => {
         allScenarios = data;
-        setupUI(); // Initialise les boutons et le menu
-        console.log("Système chargé avec succès.");
-    })
-    .catch(err => console.error("Erreur de chargement :", err));
+        populateSelect();
+        setupControls();
+    });
 
-// --- 2. LE MOTEUR DE DÉTECTION (STORYBOARD) ---
-// Cette fonction définit précisément "quoi imprimer" pour chaque phase
+// 2. LOGIQUE DE STORYBOARD (Définit les 6 vues)
 function getViewConfig(phase, viewIdx) {
     if (phase === "MONO CULTURE") {
         return viewIdx === 0
@@ -40,89 +33,65 @@ function getViewConfig(phase, viewIdx) {
     return { panels: [], suffix: '_A' };
 }
 
-// --- 3. RENDU DES DONNÉES ---
+// 3. RENDU DYNAMIQUE
 function renderStep() {
-    if (!currentScenarioId || !allScenarios[currentScenarioId]) return;
-
     const scn = allScenarios[currentScenarioId];
-    const step = scn.steps[currentStepIdx]; // Récupère S1, S2 ou S3
+    const step = scn.steps[currentStepIdx];
     const config = getViewConfig(step.Step_Phase, currentViewIdx);
 
-    // Mise à jour du titre
-    document.getElementById('scenario-name').innerText = `${step.Step_Phase} - Vue ${currentViewIdx + 1}/2`;
+    // Titre de la Phase
+    document.getElementById('scenario-name').innerText = `${step.Step_Phase} (${currentStepIdx + 1}/3)`;
 
-    // A. AFFICHAGE DES PANNEAUX (ZONE ACTION)
+    // Zone Action (Les panneaux centraux)
     const actionBox = document.getElementById('box-action');
     actionBox.innerHTML = "";
     config.panels.forEach(key => {
         const pane = document.createElement('div');
         const sideClass = key.endsWith('_A') ? 'pane-a' : 'pane-b';
         pane.className = `panneau-tranche ${sideClass}`;
-
-        // On imprime la donnée brute du JSON
-        const content = step[key] || "";
-        pane.innerHTML = `<div class="pane-label">${key.replace('Zone_', '').replace('_', ' ')}</div>${content}`;
+        pane.innerHTML = `<div class="pane-label">${key.replace('Zone_', '').replace('_', ' ')}</div>${step[key] || ""}`;
         actionBox.appendChild(pane);
     });
 
-    // B. AFFICHAGE INTELLIGENCE & MACHINERIE
-    const sfx = config.suffix; // _A ou _B selon la phase
+    // Intelligence & Machinerie
+    const sfx = config.suffix;
+    document.getElementById('smart-content').innerHTML = step['Zone_Intel' + sfx] || step['Explication_SMART'] || "Analyse...";
 
-    // Intelligence
-    document.getElementById('smart-content').innerHTML = step['Zone_Intel' + sfx] || step['Explication_SMART'] || "Analyse en cours...";
-
-    // Machinerie (Logs + KPI)
-    const logText = step['Zone_Log' + sfx] || "Logs système OK";
-    const kpiBadge = step['Zone_KPI' + sfx] ? `<div class="kpi-badge" style="color:#10b981; margin-top:10px; font-weight:bold;">KPI: ${step['Zone_KPI' + sfx]}</div>` : "";
-    document.getElementById('matrix-logs').innerHTML = `<div class="log-entry">${logText}</div>${kpiBadge}`;
+    const logVal = step['Zone_Log' + sfx] || "Système OK";
+    const kpiVal = step['Zone_KPI' + sfx] ? `<div style="color:#10b981;margin-top:10px;">KPI: ${step['Zone_KPI' + sfx]}</div>` : "";
+    document.getElementById('matrix-logs').innerHTML = `<div class="log-entry">${logVal}</div>${kpiVal}`;
 }
 
-// --- 4. NAVIGATION ET CONTRÔLES ---
-function setupUI() {
-    const select = document.getElementById('scenario-select');
-    const btnIA = document.getElementById('toggleIA');
-    const btnNext = document.getElementById('nextBtn');
-    const btnStop = document.getElementById('stopBtn');
-
-    // Toggle IA
-    btnIA.onclick = () => {
-        isIAMode = !isIAMode;
-        btnIA.innerText = isIAMode ? "IA ON" : "IA OFF";
-        btnIA.style.background = isIAMode ? "#10b981" : "#1e293b";
-        populateSelect(select);
-    };
-
-    // Sélection Scénario
-    select.onchange = (e) => {
-        currentScenarioId = e.target.value;
-        currentStepIdx = 0;
-        currentViewIdx = 0;
-        if (currentScenarioId) renderStep();
-    };
-
-    // Bouton Suivant (Gère les 2 tranches par étape JSON)
-    btnNext.onclick = () => {
+// 4. NAVIGATION
+function setupControls() {
+    document.getElementById('nextBtn').onclick = () => {
         const scn = allScenarios[currentScenarioId];
         if (currentViewIdx < 1) {
-            currentViewIdx++; // Passe à la 2ème tranche
+            currentViewIdx++;
         } else if (currentStepIdx < scn.steps.length - 1) {
-            currentStepIdx++; // Passe à la ligne JSON suivante
+            currentStepIdx++;
             currentViewIdx = 0;
         }
         renderStep();
     };
 
-    // Bouton Stop / Reprise
-    btnStop.onclick = () => {
+    document.getElementById('stopBtn').onclick = () => {
         currentStepIdx = 0;
         currentViewIdx = 0;
         renderStep();
     };
 
-    populateSelect(select);
+    const btnIA = document.getElementById('toggleIA');
+    btnIA.onclick = () => {
+        isIAMode = !isIAMode;
+        btnIA.innerText = isIAMode ? "IA ON" : "IA OFF";
+        btnIA.style.background = isIAMode ? "#10b981" : "#1e293b";
+        populateSelect();
+    };
 }
 
-function populateSelect(select) {
+function populateSelect() {
+    const select = document.getElementById('scenario-select');
     select.innerHTML = '<option value="">-- Choisir un Scénario --</option>';
     Object.keys(allScenarios).forEach(id => {
         const scn = allScenarios[id];
@@ -133,4 +102,10 @@ function populateSelect(select) {
             select.appendChild(opt);
         }
     });
+    select.onchange = (e) => {
+        currentScenarioId = e.target.value;
+        currentStepIdx = 0;
+        currentViewIdx = 0;
+        if (currentScenarioId) renderStep();
+    };
 }
