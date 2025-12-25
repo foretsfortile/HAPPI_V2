@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HAPPI V2 - Mirror System</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -13,10 +14,11 @@
             <div class="logo">HAPPI <span class="acronym">V2 - Mirror</span></div>
         </div>
         <div class="nav-controls">
+            <button id="toggleIA" class="ia-toggle-btn">IA OFF</button>
             <select id="scenario-select">
                 <option value="">-- Choisir un Scénario --</option>
             </select>
-            <button id="stopBtn" style="background:#450a0a; color:white;">STOP / ANALYSE</button>
+            <button id="stopBtn" class="stop-btn">STOP / ANALYSE</button>
         </div>
     </header>
 
@@ -25,22 +27,27 @@
             <h2 class="col-title" id="scenario-name">SÉLECTIONNEZ UN SCÉNARIO</h2>
             <div id="box-action" class="view-box"></div>
         </section>
-
         <section class="col brain-col">
             <h2 class="col-title">Intelligence</h2>
-            <div id="smart-content" class="scroll-area"></div>
+            <div id="smart-content" class="scroll-area">
+                <div class="placeholder-text">En attente de données...</div>
+            </div>
         </section>
-
         <section class="col system-col">
             <h2 class="col-title">Machinerie</h2>
-            <div id="matrix-logs" class="matrix-area"></div>
+            <div id="matrix-logs" class="matrix-area">
+                <div class="log-entry">Système prêt.</div>
+            </div>
         </section>
     </main>
 
     <footer id="global-controls">
-        <button id="prevBtn" class="focus-btn">PRÉCÉDENT</button>
-        <button id="nextBtn" class="main-action">SUIVANT</button>
+        <div class="nav-buttons">
+            <button id="prevBtn" class="focus-btn">PRÉCÉDENT</button>
+            <button id="nextBtn" class="main-action">SUIVANT</button>
+        </div>
     </footer>
+    <script src="app.js"></script>
 </body>
 
 </html>

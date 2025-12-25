@@ -45,7 +45,7 @@ body {
     transition: all 0.2s ease;
 }
 
-#toggleIA.ia-on {
+#ia-toggle-btn {
     background: #ef4444;
     color: #ffffff;
     border-color: #ef4444;
